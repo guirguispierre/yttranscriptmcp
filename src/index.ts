@@ -7,6 +7,7 @@ import {
   TranscriptUnavailableError,
   getYoutubeTranscript,
 } from "./tools/getYoutubeTranscript";
+import { landingPageHtml, mcpGuideHtml } from "./pages";
 
 const MCP_PATH = "/mcp";
 const HEALTH_PATH = "/";
@@ -30,6 +31,10 @@ export default {
     }
 
     if (url.pathname === HEALTH_PATH && request.method === "GET") {
+      if (wantsHtml(request)) {
+        return htmlResponse(200, landingPageHtml());
+      }
+
       return jsonResponse(200, {
         status: "ok",
         service: "youtube-transcript-mcp",
@@ -41,6 +46,10 @@ export default {
         error: "Not Found",
         message: "The requested route does not exist.",
       });
+    }
+
+    if (request.method === "GET" && wantsHtml(request)) {
+      return htmlResponse(200, mcpGuideHtml());
     }
 
     if (request.method !== "POST") {
@@ -142,6 +151,20 @@ function createServer(): McpServer {
 
   return server;
 }
+function wantsHtml(request: Request): boolean {
+  const accept = request.headers.get("Accept") ?? "";
+  return accept.includes("text/html");
+}
+
+function htmlResponse(status: number, html: string): Response {
+  return new Response(html, {
+    status,
+    headers: buildHeaders({
+      "Content-Type": "text/html; charset=utf-8",
+    }),
+  });
+}
+
 function jsonResponse(
   status: number,
   payload: unknown,
